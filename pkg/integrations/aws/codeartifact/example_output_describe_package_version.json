@@ -1,0 +1,26 @@
+{
+  "displayName": "example-package",
+  "format": "npm",
+  "homePage": "https://example.com",
+  "licenses": [
+    {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  ],
+  "namespace": null,
+  "origin": {
+    "domainEntryPoint": {
+      "externalConnectionName": "public:npmjs",
+      "repositoryName": "example-repo"
+    },
+    "originType": "EXTERNAL"
+  },
+  "packageName": "example-package",
+  "publishedTime": 1717526400,
+  "revision": "E30D52B451F42F41",
+  "sourceCodeRepository": "https://github.com/example/example-package",
+  "status": "Published",
+  "summary": "Example package",
+  "version": "1.2.3"
+}
