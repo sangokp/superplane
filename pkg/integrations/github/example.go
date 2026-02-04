@@ -40,6 +40,12 @@ var exampleOutputRunWorkflowBytes []byte
 //go:embed example_output_get_workflow_usage.json
 var exampleOutputGetWorkflowUsageBytes []byte
 
+//go:embed example_output_create_issue_comment.json
+var exampleOutputCreateIssueCommentBytes []byte
+
+//go:embed example_output_create_review.json
+var exampleOutputCreateReviewBytes []byte
+
 //go:embed example_data_on_issue_comment.json
 var exampleDataOnIssueCommentBytes []byte
 
@@ -99,6 +105,12 @@ var exampleOutputRunWorkflow map[string]any
 
 var exampleOutputGetWorkflowUsageOnce sync.Once
 var exampleOutputGetWorkflowUsage map[string]any
+
+var exampleOutputCreateIssueCommentOnce sync.Once
+var exampleOutputCreateIssueComment map[string]any
+
+var exampleOutputCreateReviewOnce sync.Once
+var exampleOutputCreateReview map[string]any
 
 var exampleDataOnIssueCommentOnce sync.Once
 var exampleDataOnIssueComment map[string]any
@@ -173,6 +185,14 @@ func (c *RunWorkflow) ExampleOutput() map[string]any {
 
 func (c *GetWorkflowUsage) ExampleOutput() map[string]any {
 	return utils.UnmarshalEmbeddedJSON(&exampleOutputGetWorkflowUsageOnce, exampleOutputGetWorkflowUsageBytes, &exampleOutputGetWorkflowUsage)
+}
+
+func (c *CreateIssueComment) ExampleOutput() map[string]any {
+	return utils.UnmarshalEmbeddedJSON(&exampleOutputCreateIssueCommentOnce, exampleOutputCreateIssueCommentBytes, &exampleOutputCreateIssueComment)
+}
+
+func (c *CreateReview) ExampleOutput() map[string]any {
+	return utils.UnmarshalEmbeddedJSON(&exampleOutputCreateReviewOnce, exampleOutputCreateReviewBytes, &exampleOutputCreateReview)
 }
 
 func (t *OnIssueComment) ExampleData() map[string]any {
