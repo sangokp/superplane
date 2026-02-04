@@ -218,6 +218,8 @@ func (s *Semaphore) Components() []core.Component {
 	return []core.Component{
 		&RunWorkflow{},
 		&GetJobLogs{},
+		&GetPipeline{},
+		&ListPipelines{},
 	}
 }
 
