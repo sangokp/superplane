@@ -37,6 +37,9 @@ var exampleOutputDeleteReleaseBytes []byte
 //go:embed example_output_run_workflow.json
 var exampleOutputRunWorkflowBytes []byte
 
+//go:embed example_output_get_workflow_usage.json
+var exampleOutputGetWorkflowUsageBytes []byte
+
 //go:embed example_data_on_issue_comment.json
 var exampleDataOnIssueCommentBytes []byte
 
@@ -93,6 +96,9 @@ var exampleOutputDeleteRelease map[string]any
 
 var exampleOutputRunWorkflowOnce sync.Once
 var exampleOutputRunWorkflow map[string]any
+
+var exampleOutputGetWorkflowUsageOnce sync.Once
+var exampleOutputGetWorkflowUsage map[string]any
 
 var exampleDataOnIssueCommentOnce sync.Once
 var exampleDataOnIssueComment map[string]any
@@ -163,6 +169,10 @@ func (c *DeleteRelease) ExampleOutput() map[string]any {
 
 func (c *RunWorkflow) ExampleOutput() map[string]any {
 	return utils.UnmarshalEmbeddedJSON(&exampleOutputRunWorkflowOnce, exampleOutputRunWorkflowBytes, &exampleOutputRunWorkflow)
+}
+
+func (c *GetWorkflowUsage) ExampleOutput() map[string]any {
+	return utils.UnmarshalEmbeddedJSON(&exampleOutputGetWorkflowUsageOnce, exampleOutputGetWorkflowUsageBytes, &exampleOutputGetWorkflowUsage)
 }
 
 func (t *OnIssueComment) ExampleData() map[string]any {

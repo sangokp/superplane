@@ -14,8 +14,11 @@ import { publishCommitStatusMapper } from "./publish_commit_status";
 import { createReleaseMapper } from "./create_release";
 import { updateReleaseMapper } from "./update_release";
 import { deleteReleaseMapper } from "./delete_release";
+import { createReviewMapper } from "./create_review";
 import { getReleaseMapper } from "./get_release";
 import { getRepositoryIssuesMapper } from "./get_repository_issues";
+import { getWorkflowUsageMapper } from "./get_workflow_usage";
+import { createIssueCommentMapper } from "./create_issue_comment";
 import { buildActionStateRegistry } from "../utils";
 
 export const eventStateRegistry: Record<string, EventStateRegistry> = {
@@ -27,8 +30,11 @@ export const eventStateRegistry: Record<string, EventStateRegistry> = {
   createRelease: buildActionStateRegistry("created"),
   updateRelease: buildActionStateRegistry("updated"),
   deleteRelease: buildActionStateRegistry("deleted"),
+  createReview: buildActionStateRegistry("submitted"),
   getRelease: buildActionStateRegistry("retrieved"),
   getRepositoryIssues: buildActionStateRegistry("retrieved"),
+  getWorkflowUsage: buildActionStateRegistry("retrieved"),
+  createIssueComment: buildActionStateRegistry("created"),
 };
 
 export const componentMappers: Record<string, ComponentBaseMapper> = {
@@ -40,8 +46,11 @@ export const componentMappers: Record<string, ComponentBaseMapper> = {
   createRelease: createReleaseMapper,
   updateRelease: updateReleaseMapper,
   deleteRelease: deleteReleaseMapper,
+  createReview: createReviewMapper,
   getRelease: getReleaseMapper,
   getRepositoryIssues: getRepositoryIssuesMapper,
+  getWorkflowUsage: getWorkflowUsageMapper,
+  createIssueComment: createIssueCommentMapper,
 };
 
 export const triggerRenderers: Record<string, TriggerRenderer> = {
