@@ -2,9 +2,9 @@ package github
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/google/go-github/v74/github"
 	"github.com/google/uuid"
@@ -13,15 +13,18 @@ import (
 	"github.com/superplanehq/superplane/pkg/core"
 )
 
+// MaxPayloadSize is the maximum allowed response payload size (1MB)
+const MaxPayloadSize = 1 * 1024 * 1024
+
 type GetRepositoryIssues struct{}
 
 type GetRepositoryIssuesConfiguration struct {
-	Repository string  `mapstructure:"repository"`
-	State      string  `mapstructure:"state"`
-	Labels     *string `mapstructure:"labels,omitempty"`
-	Sort       string  `mapstructure:"sort"`
-	Direction  string  `mapstructure:"direction"`
-	PerPage    *string `mapstructure:"perPage,omitempty"`
+	Repository string   `mapstructure:"repository"`
+	State      string   `mapstructure:"state"`
+	Labels     []string `mapstructure:"labels,omitempty"`
+	Sort       string   `mapstructure:"sort"`
+	Direction  string   `mapstructure:"direction"`
+	PerPage    *string  `mapstructure:"perPage,omitempty"`
 }
 
 func (c *GetRepositoryIssues) Name() string {
@@ -50,7 +53,7 @@ func (c *GetRepositoryIssues) Documentation() string {
 
 - **Repository**: Select the GitHub repository to list issues from
 - **State**: Filter by issue state (open, closed, or all)
-- **Labels**: Filter by one or more labels (optional)
+- **Labels**: Filter by one or more labels (optional, OR logic - returns issues matching any label)
 - **Sort**: Sort by created, updated, or comments
 - **Direction**: Sort direction (ascending or descending)
 - **Per Page**: Number of issues to return (max 100)
@@ -110,12 +113,19 @@ func (c *GetRepositoryIssues) Configuration() []configuration.Field {
 			Description: "Filter issues by state",
 		},
 		{
-			Name:        "labels",
-			Label:       "Labels",
-			Type:        configuration.FieldTypeString,
-			Required:    false,
-			Placeholder: "e.g., bug, enhancement",
-			Description: "Filter by labels (comma-separated)",
+			Name:     "labels",
+			Label:    "Labels",
+			Type:     configuration.FieldTypeList,
+			Required: false,
+			TypeOptions: &configuration.TypeOptions{
+				List: &configuration.ListTypeOptions{
+					ItemLabel: "Label",
+					ItemDefinition: &configuration.ListItemDefinition{
+						Type: configuration.FieldTypeString,
+					},
+				},
+			},
+			Description: "Filter by labels (OR logic - returns issues matching any selected label, returns all if none selected)",
 		},
 		{
 			Name:     "sort",
@@ -196,21 +206,22 @@ func (c *GetRepositoryIssues) Execute(ctx core.ExecutionContext) error {
 		},
 	}
 
-	if config.Labels != nil && *config.Labels != "" {
-		// Parse comma-separated labels, filtering empty strings
-		rawLabels := strings.Split(*config.Labels, ",")
-		labelList := make([]string, 0, len(rawLabels))
-		for _, label := range rawLabels {
-			trimmed := strings.TrimSpace(label)
-			if trimmed != "" {
-				labelList = append(labelList, trimmed)
+	// Set labels filter (OR logic - GitHub API returns issues matching ANY of the labels)
+	// If no labels are selected, returns all issues (no filter applied)
+	if len(config.Labels) > 0 {
+		// Filter out any empty strings
+		filteredLabels := make([]string, 0, len(config.Labels))
+		for _, label := range config.Labels {
+			if label != "" {
+				filteredLabels = append(filteredLabels, label)
 			}
 		}
-		if len(labelList) > 0 {
-			opts.Labels = labelList
+		if len(filteredLabels) > 0 {
+			opts.Labels = filteredLabels
 		}
 	}
 
+	// Validate and set perPage with strict error for values > 100
 	if config.PerPage != nil && *config.PerPage != "" {
 		perPage, err := strconv.Atoi(*config.PerPage)
 		if err != nil {
@@ -218,10 +229,14 @@ func (c *GetRepositoryIssues) Execute(ctx core.ExecutionContext) error {
 		}
 
 		if perPage > 100 {
-			opts.ListOptions.PerPage = 100
-		} else if perPage > 0 {
-			opts.ListOptions.PerPage = perPage
+			return fmt.Errorf("perPage value %d exceeds maximum limit of 100", perPage)
 		}
+
+		if perPage < 1 {
+			return fmt.Errorf("perPage value %d must be at least 1", perPage)
+		}
+
+		opts.ListOptions.PerPage = perPage
 	}
 
 	// Fetch issues
@@ -239,6 +254,16 @@ func (c *GetRepositoryIssues) Execute(ctx core.ExecutionContext) error {
 	issueList := make([]any, len(issues))
 	for i, issue := range issues {
 		issueList[i] = buildIssueData(issue)
+	}
+
+	// Check payload size limit (1MB)
+	payloadBytes, err := json.Marshal(issueList)
+	if err != nil {
+		return fmt.Errorf("failed to serialize response: %w", err)
+	}
+
+	if len(payloadBytes) > MaxPayloadSize {
+		return fmt.Errorf("response payload size (%d bytes) exceeds maximum limit of %d bytes (1MB). Try reducing perPage or using more specific filters", len(payloadBytes), MaxPayloadSize)
 	}
 
 	// Wrap issueList in []any so the entire list is emitted as ONE output item

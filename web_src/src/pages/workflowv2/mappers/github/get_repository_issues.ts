@@ -1,11 +1,12 @@
-import {
-  ComponentsNode,
-  ComponentsComponent,
-  CanvasesCanvasNodeExecution,
-  CanvasesCanvasNodeQueueItem,
-} from "@/api-client";
 import { ComponentBaseProps } from "@/ui/componentBase";
-import { ComponentBaseMapper, OutputPayload } from "../types";
+import {
+  ComponentBaseMapper,
+  ComponentBaseContext,
+  SubtitleContext,
+  ExecutionDetailsContext,
+  OutputPayload,
+  NodeInfo,
+} from "../types";
 import { baseProps } from "./base";
 import { buildGithubExecutionSubtitle } from "./utils";
 import { MetadataItem } from "@/ui/metadataList";
@@ -35,13 +36,13 @@ interface IssueOutput {
 interface GetRepositoryIssuesConfiguration {
   repository?: string;
   state?: string;
-  labels?: string;
+  labels?: string[];
   sort?: string;
   direction?: string;
   perPage?: number;
 }
 
-function getRepositoryIssuesMetadataList(node: ComponentsNode): MetadataItem[] {
+function getRepositoryIssuesMetadataList(node: NodeInfo): MetadataItem[] {
   const metadata: MetadataItem[] = [];
   const configuration = node.configuration as GetRepositoryIssuesConfiguration | undefined;
   const nodeMetadata = node.metadata as { repository?: { name?: string } } | undefined;
@@ -54,44 +55,40 @@ function getRepositoryIssuesMetadataList(node: ComponentsNode): MetadataItem[] {
     metadata.push({ icon: "filter", label: `State: ${configuration.state}` });
   }
 
-  if (configuration?.labels) {
-    metadata.push({ icon: "tag", label: `Labels: ${configuration.labels}` });
+  if (configuration?.labels && configuration.labels.length > 0) {
+    metadata.push({ icon: "tag", label: `Labels: ${configuration.labels.join(", ")}` });
   }
 
   return metadata;
 }
 
 export const getRepositoryIssuesMapper: ComponentBaseMapper = {
-  props(
-    nodes: ComponentsNode[],
-    node: ComponentsNode,
-    componentDefinition: ComponentsComponent,
-    lastExecutions: CanvasesCanvasNodeExecution[],
-    queueItems: CanvasesCanvasNodeQueueItem[],
-  ): ComponentBaseProps {
-    const base = baseProps(nodes, node, componentDefinition, lastExecutions, queueItems);
+  props(context: ComponentBaseContext): ComponentBaseProps {
+    // Get base props which includes proper event title inheritance from root event
+    const base = baseProps(context.nodes, context.node, context.componentDefinition, context.lastExecutions);
 
     return {
       ...base,
-      metadata: getRepositoryIssuesMetadataList(node),
+      metadata: getRepositoryIssuesMetadataList(context.node),
     };
   },
-  subtitle(_node: ComponentsNode, execution: CanvasesCanvasNodeExecution): string {
-    const outputs = execution.outputs as { default?: OutputPayload[] } | undefined;
+
+  subtitle(context: SubtitleContext): string {
+    const outputs = context.execution.outputs as { default?: OutputPayload[] } | undefined;
     if (outputs?.default && Array.isArray(outputs.default[0]?.data)) {
       const issues = outputs.default[0].data as IssueOutput[];
       const count = issues.length;
-      return buildGithubExecutionSubtitle(execution, `${count} issue${count !== 1 ? "s" : ""}`);
+      return buildGithubExecutionSubtitle(context.execution, `${count} issue${count !== 1 ? "s" : ""}`);
     }
-    return buildGithubExecutionSubtitle(execution);
+    return buildGithubExecutionSubtitle(context.execution);
   },
 
-  getExecutionDetails(execution: CanvasesCanvasNodeExecution, _node: ComponentsNode): Record<string, string> {
-    const outputs = execution.outputs as { default?: OutputPayload[] } | undefined;
+  getExecutionDetails(context: ExecutionDetailsContext): Record<string, string> {
+    const outputs = context.execution.outputs as { default?: OutputPayload[] } | undefined;
     const details: Record<string, string> = {};
 
     Object.assign(details, {
-      "Retrieved At": execution.createdAt ? new Date(execution.createdAt).toLocaleString() : "-",
+      "Retrieved At": context.execution.createdAt ? new Date(context.execution.createdAt).toLocaleString() : "-",
     });
 
     if (outputs?.default && Array.isArray(outputs.default[0]?.data)) {
